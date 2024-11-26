@@ -150,27 +150,23 @@ function handleDrop(e) {
     if (!dropZone) return;
 
     dropZone.classList.remove('hover');
-    const data = e.dataTransfer.getData('text/plain');
     
+    // Get the dragged poster
+    const draggedPoster = document.querySelector('.dragging');
+    if (!draggedPoster) return;
+
     // Only allow drop if zone is empty
     if (!dropZone.querySelector('.poster')) {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = data;
-        const posterElement = tempDiv.firstChild;
-        dropZone.appendChild(posterElement);
+        // Clone the poster and add it to the drop zone
+        const posterClone = draggedPoster.cloneNode(true);
+        dropZone.appendChild(posterClone);
         
-        // Remove the original poster from the bottom section
-        const draggedPoster = document.querySelector('.dragging');
-        if (draggedPoster && draggedPoster.parentElement.id === 'moviePosters') {
-            draggedPoster.remove();
-        }
+        // Remove the original poster
+        draggedPoster.remove();
         
         // Make the dropped poster draggable again
-        const droppedPoster = dropZone.querySelector('.poster');
-        if (droppedPoster) {
-            droppedPoster.setAttribute('draggable', 'true');
-            droppedPoster.addEventListener('dragstart', handleDragStart);
-            droppedPoster.addEventListener('dragend', handleDragEnd);
-        }
+        posterClone.setAttribute('draggable', 'true');
+        posterClone.addEventListener('dragstart', handleDragStart);
+        posterClone.addEventListener('dragend', handleDragEnd);
     }
 }
