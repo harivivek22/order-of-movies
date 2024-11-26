@@ -151,7 +151,6 @@ function handleDrop(e) {
 
     dropZone.classList.remove('hover');
     
-    // Get the dragged poster
     const draggedPoster = document.querySelector('.dragging');
     if (!draggedPoster) return;
 
@@ -161,8 +160,10 @@ function handleDrop(e) {
         const posterClone = draggedPoster.cloneNode(true);
         dropZone.appendChild(posterClone);
         
-        // Remove the original poster
-        draggedPoster.remove();
+        // Remove the original poster if it's from the bottom section
+        if (draggedPoster.parentElement.id === 'moviePosters') {
+            draggedPoster.remove();
+        }
         
         // Make the dropped poster draggable again
         posterClone.setAttribute('draggable', 'true');
