@@ -44,15 +44,16 @@ function setupDragAndDrop() {
     const dropZones = document.querySelectorAll('.drop-zone');
 
     posters.forEach(poster => {
-        poster.addEventListener('dragstart', dragStart);
-        poster.addEventListener('dragend', dragEnd);
+        poster.setAttribute('draggable', 'true');
+        poster.addEventListener('dragstart', handleDragStart);
+        poster.addEventListener('dragend', handleDragEnd);
     });
 
     dropZones.forEach(zone => {
-        zone.addEventListener('dragover', dragOver);
-        zone.addEventListener('drop', drop);
-        zone.addEventListener('dragenter', dragEnter);
-        zone.addEventListener('dragleave', dragLeave);
+        zone.addEventListener('dragover', handleDragOver);
+        zone.addEventListener('drop', handleDrop);
+        zone.addEventListener('dragenter', handleDragEnter);
+        zone.addEventListener('dragleave', handleDragLeave);
     });
 }
 
@@ -109,37 +110,54 @@ function showResult(isWinner) {
 }
 
 // Drag and Drop helper functions
-function dragStart(e) {
+function handleDragStart(e) {
     e.target.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', e.target.outerHTML);
 }
 
-function dragEnd(e) {
+function handleDragEnd(e) {
     e.target.classList.remove('dragging');
 }
 
-function dragOver(e) {
+function handleDragOver(e) {
     e.preventDefault();
 }
 
-function dragEnter(e) {
+function handleDragEnter(e) {
     e.preventDefault();
-    e.target.classList.add('hover');
+    if (e.target.classList.contains('drop-zone')) {
+        e.target.classList.add('hover');
+    }
 }
 
-function dragLeave(e) {
-    e.target.classList.remove('hover');
+function handleDragLeave(e) {
+    if (e.target.classList.contains('drop-zone')) {
+        e.target.classList.remove('hover');
+    }
 }
 
-function drop(e) {
+function handleDrop(e) {
     e.preventDefault();
     const dropZone = e.target.closest('.drop-zone');
-    const poster = document.querySelector('.dragging');
-
-    if (dropZone && poster) {
-        dropZone.innerHTML = '';
-        dropZone.appendChild(poster.cloneNode(true));
-        poster.remove();
-    }
+    if (!dropZone) return;
 
     dropZone.classList.remove('hover');
+    const data = e.dataTransfer.getData('text/plain');
+    
+    // Only allow drop if zone is empty
+    if (!dropZone.querySelector('.poster')) {
+        dropZone.innerHTML = data;
+        const originalPoster = document.querySelector('.dragging');
+        if (originalPoster) {
+            originalPoster.remove();
+        }
+        
+        // Make the dropped poster draggable again
+        const droppedPoster = dropZone.querySelector('.poster');
+        if (droppedPoster) {
+            droppedPoster.setAttribute('draggable', 'true');
+            droppedPoster.addEventListener('dragstart', handleDragStart);
+            droppedPoster.addEventListener('dragend', handleDragEnd);
+        }
+    }
 }
