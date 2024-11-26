@@ -18,18 +18,19 @@ async function startGame() {
     startTimer();
 }
 
-async function fetchMovies() {
+async function fetchRandomMovies() {
     try {
-        const promises = movieIds.map(id =>
-            fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}`)
-                .then(response => response.json())
-        );
+        // First fetch a popular movies list
+        const response = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&page=${Math.floor(Math.random() * 20) + 1}`);
+        const data = await response.json();
         
-        movies = await Promise.all(promises);
+        // Randomly select 3 movies from the results
+        const shuffledMovies = data.results.sort(() => Math.random() - 0.5);
+        movies = shuffledMovies.slice(0, 3);
         
         // Display posters
         const moviePosters = document.getElementById('moviePosters');
-        moviePosters.innerHTML = ''; // Clear existing posters
+        moviePosters.innerHTML = '';
         
         movies.forEach((movie) => {
             const posterDiv = document.createElement('div');
@@ -150,7 +151,6 @@ function handleDrop(e) {
     if (!dropZone) return;
 
     dropZone.classList.remove('hover');
-    
     const draggedPoster = document.querySelector('.dragging');
     if (!draggedPoster) return;
 
@@ -163,9 +163,10 @@ function handleDrop(e) {
         // Remove the original poster if it's from the bottom section
         if (draggedPoster.parentElement.id === 'moviePosters') {
             draggedPoster.remove();
+            draggedPoster.setAttribute('draggable', 'false');  // Disable further dragging
         }
         
-        // Make the dropped poster draggable again
+        // Make only this dropped poster draggable
         posterClone.setAttribute('draggable', 'true');
         posterClone.addEventListener('dragstart', handleDragStart);
         posterClone.addEventListener('dragend', handleDragEnd);
