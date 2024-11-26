@@ -24,16 +24,23 @@ async function fetchMovies() {
             fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}`)
                 .then(response => response.json())
         );
-
+        
         movies = await Promise.all(promises);
-
+        
         // Display posters
-        const posters = document.querySelectorAll('.poster');
-        movies.forEach((movie, index) => {
-            posters[index].style.backgroundImage = 
-                `url(https://image.tmdb.org/t/p/w500${movie.poster_path})`;
-            posters[index].setAttribute('data-movie-id', movie.id);
+        const moviePosters = document.getElementById('moviePosters');
+        moviePosters.innerHTML = ''; // Clear existing posters
+        
+        movies.forEach((movie) => {
+            const posterDiv = document.createElement('div');
+            posterDiv.className = 'poster';
+            posterDiv.draggable = true;
+            posterDiv.style.backgroundImage = `url(https://image.tmdb.org/t/p/w500${movie.poster_path})`;
+            posterDiv.setAttribute('data-movie-id', movie.id);
+            moviePosters.appendChild(posterDiv);
         });
+        
+        setupDragAndDrop();
     } catch (error) {
         console.error('Error fetching movies:', error);
     }
@@ -113,6 +120,7 @@ function showResult(isWinner) {
 function handleDragStart(e) {
     e.target.classList.add('dragging');
     e.dataTransfer.setData('text/plain', e.target.outerHTML);
+    e.dataTransfer.effectAllowed = 'move';
 }
 
 function handleDragEnd(e) {
@@ -146,11 +154,10 @@ function handleDrop(e) {
     
     // Only allow drop if zone is empty
     if (!dropZone.querySelector('.poster')) {
-        dropZone.innerHTML = data;
-        const originalPoster = document.querySelector('.dragging');
-        if (originalPoster) {
-            originalPoster.remove();
-        }
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data;
+        const posterElement = tempDiv.firstChild;
+        dropZone.appendChild(posterElement);
         
         // Make the dropped poster draggable again
         const droppedPoster = dropZone.querySelector('.poster');
