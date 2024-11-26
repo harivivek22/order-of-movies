@@ -159,6 +159,12 @@ function handleDrop(e) {
         const posterElement = tempDiv.firstChild;
         dropZone.appendChild(posterElement);
         
+        // Remove the original poster from the bottom section
+        const draggedPoster = document.querySelector('.dragging');
+        if (draggedPoster && draggedPoster.parentElement.id === 'moviePosters') {
+            draggedPoster.remove();
+        }
+        
         // Make the dropped poster draggable again
         const droppedPoster = dropZone.querySelector('.poster');
         if (droppedPoster) {
