@@ -12,20 +12,24 @@ document.getElementById('submitBtn').addEventListener('click', checkAnswer);
 async function startGame() {
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('gameScreen').classList.remove('hidden');
-
-    await fetchMovies();
-    setupDragAndDrop();
+    
+    await fetchRandomMovies();
     startTimer();
 }
 
 async function fetchRandomMovies() {
     try {
-        // First fetch a popular movies list
+        // Fetch popular movies with poster_path filter
         const response = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&page=${Math.floor(Math.random() * 20) + 1}`);
         const data = await response.json();
         
-        // Randomly select 3 movies from the results
-        const shuffledMovies = data.results.sort(() => Math.random() - 0.5);
+        // Filter movies that have poster images and release dates
+        const moviesWithPosters = data.results.filter(movie => 
+            movie.poster_path && movie.release_date
+        );
+        
+        // Get 3 random movies
+        const shuffledMovies = moviesWithPosters.sort(() => Math.random() - 0.5);
         movies = shuffledMovies.slice(0, 3);
         
         // Display posters
@@ -33,12 +37,14 @@ async function fetchRandomMovies() {
         moviePosters.innerHTML = '';
         
         movies.forEach((movie) => {
-            const posterDiv = document.createElement('div');
-            posterDiv.className = 'poster';
-            posterDiv.draggable = true;
-            posterDiv.style.backgroundImage = `url(https://image.tmdb.org/t/p/w500${movie.poster_path})`;
-            posterDiv.setAttribute('data-movie-id', movie.id);
-            moviePosters.appendChild(posterDiv);
+            if (movie.poster_path) {
+                const posterDiv = document.createElement('div');
+                posterDiv.className = 'poster';
+                posterDiv.draggable = true;
+                posterDiv.style.backgroundImage = `url(https://image.tmdb.org/t/p/w500${movie.poster_path})`;
+                posterDiv.setAttribute('data-movie-id', movie.id);
+                moviePosters.appendChild(posterDiv);
+            }
         });
         
         setupDragAndDrop();
