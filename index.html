@@ -7,35 +7,41 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="startScreen" class="container">
+    <!-- Start Screen -->
+    <div id="start-screen">
         <h1>Order of Movies</h1>
-        <p>Arrange the movies in ascending order of release date</p>
+        <p>Arrange the movies in order of their release date</p>
         <p>You got 30 seconds</p>
-        <button id="startBtn">Start</button>
+        <button id="start-btn">Start Game</button>
     </div>
 
-    <div id="gameScreen" class="container hidden">
-        <div class="header">
-            <div id="timer">30</div>
-            <div id="points">1000</div>
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden">
+        <div class="game-header">
+            <div class="timer-container">Time: <span id="timer">30</span>s</div>
+            <div class="score-container">Score: <span id="score">1000</span></div>
         </div>
-        <div id="dropZones">
-            <div class="drop-zone" data-index="0"></div>
-            <div class="drop-zone" data-index="1"></div>
-            <div class="drop-zone" data-index="2"></div>
-        </div>
-        <button id="submitBtn">Submit</button>
-        <div id="moviePosters">
-            <div class="poster" draggable="true"></div>
-            <div class="poster" draggable="true"></div>
-            <div class="poster" draggable="true"></div>
+
+        <div class="game-area">
+            <div class="drop-container">
+                <div class="drop-zone" data-index="0"></div>
+                <div class="drop-zone" data-index="1"></div>
+                <div class="drop-zone" data-index="2"></div>
+            </div>
+
+            <div id="movie-list"></div>
+
+            <button id="submit-btn" class="hidden">Submit Order</button>
         </div>
     </div>
 
-    <div id="resultScreen" class="container hidden">
-        <h2 id="resultMessage"></h2>
-        <p id="finalScore"></p>
+    <!-- Result Screen -->
+    <div id="result-screen" class="hidden">
+        <h2 id="result-message"></h2>
+        <p id="final-score"></p>
+        <button id="play-again">Play Again</button>
     </div>
+
+    <script src="script.js"></script>
 </body>
-<script src="script.js"></script>
 </html>

@@ -1,187 +1,193 @@
-const API_KEY = '920dd780e31ffa6fdfda302d760229ea';
-let currentScore = 1000;
-let timerInterval;
-let movies = [];
+class MovieGame {
+    constructor() {
+        // DOM Elements
+        this.startScreen = document.getElementById('start-screen');
+        this.gameScreen = document.getElementById('game-screen');
+        this.resultScreen = document.getElementById('result-screen');
+        this.startBtn = document.getElementById('start-btn');
+        this.submitBtn = document.getElementById('submit-btn');
+        this.playAgainBtn = document.getElementById('play-again');
+        this.timerElement = document.getElementById('timer');
+        this.scoreElement = document.getElementById('score');
+        this.movieList = document.getElementById('movie-list');
+        this.dropZones = document.querySelectorAll('.drop-zone');
 
-// Sample movie IDs (you can change these)
-const movieIds = [597, 598, 599];
+        // Game State
+        this.movies = [];
+        this.timer = 30;
+        this.score = 1000;
+        this.interval = null;
 
-document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('submitBtn').addEventListener('click', checkAnswer);
+        // Event Listeners
+        this.startBtn.addEventListener('click', () => this.startGame());
+        this.submitBtn.addEventListener('click', () => this.checkAndSubmitOrder());
+        this.playAgainBtn.addEventListener('click', () => this.resetGame());
+        this.setupDragAndDrop();
+    }
 
-async function startGame() {
-    document.getElementById('startScreen').classList.add('hidden');
-    document.getElementById('gameScreen').classList.remove('hidden');
-    
-    await fetchRandomMovies();
-    startTimer();
-}
+    async fetchMovies() {
+        try {
+            const response = await fetch('arrangemovies.csv');
+            if (!response.ok) throw new Error('Failed to load CSV file');
 
-async function fetchRandomMovies() {
-    try {
-        // Fetch popular movies with poster_path filter
-        const response = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&page=${Math.floor(Math.random() * 20) + 1}`);
-        const data = await response.json();
-        
-        // Filter movies that have poster images and release dates
-        const moviesWithPosters = data.results.filter(movie => 
-            movie.poster_path && movie.release_date
-        );
-        
-        // Get 3 random movies
-        const shuffledMovies = moviesWithPosters.sort(() => Math.random() - 0.5);
-        movies = shuffledMovies.slice(0, 3);
-        
-        // Display posters
-        const moviePosters = document.getElementById('moviePosters');
-        moviePosters.innerHTML = '';
-        
-        movies.forEach((movie) => {
-            if (movie.poster_path) {
-                const posterDiv = document.createElement('div');
-                posterDiv.className = 'poster';
-                posterDiv.draggable = true;
-                posterDiv.style.backgroundImage = `url(https://image.tmdb.org/t/p/w500${movie.poster_path})`;
-                posterDiv.setAttribute('data-movie-id', movie.id);
-                moviePosters.appendChild(posterDiv);
+            const csvText = await response.text();
+            const rows = csvText.split('\n')
+                .filter(row => row.trim())
+                .slice(1);
+
+            this.movies = rows.map(row => {
+                const [year, month, date, title] = row.split(',').map(item => item.trim());
+                return {
+                    title,
+                    releaseDate: new Date(`${year}-${month}-${date}`)  // Use ISO date format
+                };
+            });
+
+            // Get 3 random movies
+            this.movies = this.shuffleArray([...this.movies]).slice(0, 3);
+
+            // Store the correct order
+            this.correctOrder = [...this.movies].sort((a, b) => 
+                a.releaseDate.getTime() - b.releaseDate.getTime()
+            );
+
+            return true;
+        } catch (error) {
+            console.error('Error loading movies:', error);
+            alert('Failed to load movie data');
+            return false;
+        }
+    }
+
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    async startGame() {
+        const moviesLoaded = await this.fetchMovies();
+        if (!moviesLoaded) return;
+
+        this.startScreen.classList.add('hidden');
+        this.gameScreen.classList.remove('hidden');
+        this.createMovieElements();
+        this.startTimer();
+    }
+
+    createMovieElements() {
+        this.movieList.innerHTML = '';
+        this.shuffleArray([...this.movies]).forEach(movie => {
+            const movieElement = document.createElement('div');
+            movieElement.className = 'movie';
+            movieElement.draggable = true;
+            movieElement.textContent = movie.title;
+            movieElement.dataset.title = movie.title;
+            this.movieList.appendChild(movieElement);
+        });
+    }
+
+    setupDragAndDrop() {
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('movie')) {
+                e.target.classList.add('dragging');
             }
         });
-        
-        setupDragAndDrop();
-    } catch (error) {
-        console.error('Error fetching movies:', error);
+
+        document.addEventListener('dragend', (e) => {
+            if (e.target.classList.contains('movie')) {
+                e.target.classList.remove('dragging');
+            }
+        });
+
+        this.dropZones.forEach(zone => {
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggedMovie = document.querySelector('.movie.dragging');
+                if (draggedMovie) {
+                    const existingMovie = zone.firstChild;
+                    if (existingMovie) {
+                        const originalParent = draggedMovie.parentNode;
+                        zone.removeChild(existingMovie);
+                        originalParent.appendChild(existingMovie);
+                    }
+                    zone.appendChild(draggedMovie);
+                    this.checkCompletion();
+                }
+            });
+        });
     }
-}
 
-function setupDragAndDrop() {
-    const posters = document.querySelectorAll('.poster');
-    const dropZones = document.querySelectorAll('.drop-zone');
-
-    posters.forEach(poster => {
-        poster.setAttribute('draggable', 'true');
-        poster.addEventListener('dragstart', handleDragStart);
-        poster.addEventListener('dragend', handleDragEnd);
-    });
-
-    dropZones.forEach(zone => {
-        zone.addEventListener('dragover', handleDragOver);
-        zone.addEventListener('drop', handleDrop);
-        zone.addEventListener('dragenter', handleDragEnter);
-        zone.addEventListener('dragleave', handleDragLeave);
-    });
-}
-
-function startTimer() {
-    let timeLeft = 30;
-    const timerElement = document.getElementById('timer');
-
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        currentScore = Math.max(0, Math.floor(1000 * (timeLeft / 30)));
-
-        timerElement.textContent = timeLeft;
-        document.getElementById('points').textContent = currentScore;
-
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            showResult(false);
-        }
-    }, 1000);
-}
-
-function checkAnswer() {
-    clearInterval(timerInterval);
-
-    const dropZones = document.querySelectorAll('.drop-zone');
-    const playerOrder = Array.from(dropZones)
-        .map(zone => zone.querySelector('.poster')?.getAttribute('data-movie-id'))
-        .filter(id => id);
-
-    const correctOrder = [...movies]
-        .sort((a, b) => new Date(a.release_date) - new Date(b.release_date))
-        .map(movie => movie.id.toString());
-
-    const isCorrect = playerOrder.length === 3 && 
-        playerOrder.every((id, index) => id === correctOrder[index].toString());
-
-    showResult(isCorrect);
-}
-
-function showResult(isWinner) {
-    document.getElementById('gameScreen').classList.add('hidden');
-    document.getElementById('resultScreen').classList.remove('hidden');
-
-    const messageElement = document.getElementById('resultMessage');
-    const scoreElement = document.getElementById('finalScore');
-
-    if (isWinner) {
-        messageElement.textContent = 'Congratulations!';
-        scoreElement.textContent = `Your Score: ${currentScore}`;
-    } else {
-        messageElement.textContent = 'Game Over!';
-        scoreElement.textContent = 'Correct order will be shown here';
+    checkCompletion() {
+        const filled = Array.from(this.dropZones).every(zone => zone.hasChildNodes());
+        this.submitBtn.classList.toggle('hidden', !filled);
     }
-}
 
-// Drag and Drop helper functions
-function handleDragStart(e) {
-    e.target.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', e.target.outerHTML);
-    e.dataTransfer.effectAllowed = 'move';
-}
+    startTimer() {
+        this.interval = setInterval(() => {
+            this.timer--;
+            this.score = Math.max(0, this.score - 33);
+            this.timerElement.textContent = this.timer;
+            this.scoreElement.textContent = this.score;
 
-function handleDragEnd(e) {
-    e.target.classList.remove('dragging');
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-}
-
-function handleDragEnter(e) {
-    e.preventDefault();
-    if (e.target.classList.contains('drop-zone')) {
-        e.target.classList.add('hover');
+            if (this.timer <= 0) {
+                this.checkAndSubmitOrder();
+            }
+        }, 1000);
     }
-}
 
-function handleDragLeave(e) {
-    if (e.target.classList.contains('drop-zone')) {
-        e.target.classList.remove('hover');
+    checkOrder() {
+        const playerOrder = Array.from(this.dropZones)
+            .map(zone => zone.firstChild?.dataset.title)
+            .filter(title => title);
+
+        // Create a sorted reference array based on release dates
+        const correctOrder = [...this.movies]
+            .sort((a, b) => a.releaseDate - b.releaseDate)
+            .map(movie => movie.title);
+
+        console.log('Player order:', playerOrder);
+        console.log('Correct order:', correctOrder);
+
+        return JSON.stringify(playerOrder) === JSON.stringify(correctOrder);
     }
-}
 
-function handleDrop(e) {
-    e.preventDefault();
-    const dropZone = e.target.closest('.drop-zone');
-    if (!dropZone) return;
+    checkAndSubmitOrder() {
+        clearInterval(this.interval);
+        this.gameScreen.classList.add('hidden');
+        this.resultScreen.classList.remove('hidden');
 
-    dropZone.classList.remove('hover');
-    const draggedPoster = document.querySelector('.dragging');
-    if (!draggedPoster) return;
-
-    // Only allow drop if zone is empty
-    if (!dropZone.querySelector('.poster')) {
-        // Create a new poster element for the drop zone
-        const newPoster = document.createElement('div');
-        newPoster.className = 'poster';
-        newPoster.draggable = true;
-        newPoster.style.backgroundImage = draggedPoster.style.backgroundImage;
-        newPoster.setAttribute('data-movie-id', draggedPoster.getAttribute('data-movie-id'));
-        
-        // Add the new poster to drop zone
-        dropZone.appendChild(newPoster);
-        
-        // Remove the original poster from moviePosters section
-        if (draggedPoster.parentElement.id === 'moviePosters') {
-            draggedPoster.remove();
+        const isCorrect = this.checkOrder();
+        if (isCorrect) {
+            document.getElementById('result-message').textContent = 'Congratulations!';
+            document.getElementById('final-score').textContent = `Score: ${this.score}`;
         } else {
-            // If dragged from another slot, remove it from there
-            draggedPoster.remove();
+            document.getElementById('result-message').textContent = 'Wrong Order!';
+            document.getElementById('final-score').textContent = 
+                `Correct order: ${this.movies
+                    .sort((a, b) => a.releaseDate - b.releaseDate)
+                    .map(movie => movie.title)
+                    .join(' → ')}`;
         }
-        
-        // Add drag events to the new poster
-        newPoster.addEventListener('dragstart', handleDragStart);
-        newPoster.addEventListener('dragend', handleDragEnd);
+    }
+
+    resetGame() {
+        this.timer = 30;
+        this.score = 1000;
+        this.timerElement.textContent = this.timer;
+        this.scoreElement.textContent = this.score;
+        this.resultScreen.classList.add('hidden');
+        this.startScreen.classList.remove('hidden');
+        this.submitBtn.classList.add('hidden');
+        this.dropZones.forEach(zone => zone.innerHTML = '');
     }
 }
+
+// Initialize game when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => new MovieGame());
