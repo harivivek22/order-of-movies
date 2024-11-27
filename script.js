@@ -11,6 +11,7 @@ class MovieGame {
         this.scoreElement = document.getElementById('score');
         this.movieList = document.getElementById('movie-list');
         this.dropZones = document.querySelectorAll('.drop-zone');
+        this.feedbackMessage = document.getElementById('feedback-message');
 
         // Game State
         this.movies = [];
@@ -71,9 +72,10 @@ class MovieGame {
     async startGame() {
         const moviesLoaded = await this.fetchMovies();
         if (!moviesLoaded) return;
-
+    
         this.startScreen.classList.add('hidden');
         this.gameScreen.classList.remove('hidden');
+        this.feedbackMessage.textContent = ''; // Clear any previous feedback
         this.createMovieElements();
         this.startTimer();
     }
@@ -181,8 +183,15 @@ class MovieGame {
             document.getElementById('result-message').textContent = 'Congratulations!';
             document.getElementById('final-score').textContent = `Score: ${this.score}`;
         } else {
-            // Wrong order but still has time - continue game
-            alert('Wrong order! Try again!');
+            // Wrong order but still has time - reset positions and continue
+            this.feedbackMessage.textContent = 'Wrong order! Try again!';
+            setTimeout(() => {
+                this.feedbackMessage.textContent = '';
+            }, 2000);
+            
+            // Reset movie positions
+            this.dropZones.forEach(zone => zone.innerHTML = '');
+            this.createMovieElements();
             this.submitBtn.classList.add('hidden');
         }
     }
@@ -195,6 +204,7 @@ class MovieGame {
         this.resultScreen.classList.add('hidden');
         this.startScreen.classList.remove('hidden');
         this.submitBtn.classList.add('hidden');
+        this.feedbackMessage.textContent = ''; // Clear feedback message
         this.dropZones.forEach(zone => zone.innerHTML = '');
     }
 }
