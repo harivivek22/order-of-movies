@@ -160,21 +160,30 @@ class MovieGame {
     }
 
     checkAndSubmitOrder() {
-        clearInterval(this.interval);
-        this.gameScreen.classList.add('hidden');
-        this.resultScreen.classList.remove('hidden');
-
         const isCorrect = this.checkOrder();
-        if (isCorrect) {
-            document.getElementById('result-message').textContent = 'Congratulations!';
-            document.getElementById('final-score').textContent = `Score: ${this.score}`;
-        } else {
-            document.getElementById('result-message').textContent = 'Wrong Order!';
+    
+        if (this.timer <= 0) {
+            // Time's up - end game
+            clearInterval(this.interval);
+            this.gameScreen.classList.add('hidden');
+            this.resultScreen.classList.remove('hidden');
+            document.getElementById('result-message').textContent = 'Time\'s Up!';
             document.getElementById('final-score').textContent = 
-                `Correct order: ${this.movies
+                `Correct order: ${[...this.movies]
                     .sort((a, b) => a.releaseDate - b.releaseDate)
                     .map(movie => movie.title)
                     .join(' → ')}`;
+        } else if (isCorrect) {
+            // Correct order - end game with success
+            clearInterval(this.interval);
+            this.gameScreen.classList.add('hidden');
+            this.resultScreen.classList.remove('hidden');
+            document.getElementById('result-message').textContent = 'Congratulations!';
+            document.getElementById('final-score').textContent = `Score: ${this.score}`;
+        } else {
+            // Wrong order but still has time - continue game
+            alert('Wrong order! Try again!');
+            this.submitBtn.classList.add('hidden');
         }
     }
 
