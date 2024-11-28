@@ -12,6 +12,7 @@ class MovieGame {
         this.movieList = document.getElementById('movie-list');
         this.dropZones = document.querySelectorAll('.drop-zone');
         this.feedbackMessage = document.getElementById('feedback-message');
+        this.scores = JSON.parse(localStorage.getItem('gameScores')) || [];
 
         // Game State
         this.movies = [];
@@ -196,14 +197,13 @@ class MovieGame {
             
             // Add event listener for username submission
             document.getElementById('submit-username').addEventListener('click', () => {
-                const username = document.getElementById('twitter-handle').value;
+                const username = document.getElementById('twitter-handle').value.trim();
                 if (username.length < 1) {
                     alert('Please enter your username');
                     return;
                 }
-                // Here you can handle the username and score submission
-                console.log(`Score submitted for @${username}: ${this.score}`);
                 document.getElementById('username-input').classList.add('hidden');
+                this.submitScore(username);
             });
         } else {
             // Wrong order but still has time - reset positions and continue
@@ -217,6 +217,35 @@ class MovieGame {
             this.createMovieElements();
             this.submitBtn.classList.add('hidden');
         }
+    }
+
+    submitScore(username) {
+
+        this.scores.push({ username, score: this.score });
+
+        this.scores.sort((a, b) => b.score - a.score);
+ 
+        this.scores = this.scores.slice(0, 10);
+        
+        localStorage.setItem('gameScores', JSON.stringify(this.scores));
+    
+        this.showLeaderboard();
+    }
+
+    showLeaderboard() {
+        const leaderboard = document.getElementById('leaderboard');
+        const scoresBody = document.getElementById('scores-body');
+        
+        scoresBody.innerHTML = this.scores
+            .map((entry, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>@${entry.username}</td>
+                    <td>${entry.score}</td>
+                </tr>
+            `).join('');
+            
+        leaderboard.classList.remove('hidden');
     }
 
     resetGame() {
