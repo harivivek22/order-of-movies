@@ -132,3 +132,30 @@ button:hover {
 .hidden {
     display: none !important;
 }
+
+.feedback-message {
+    color: red;
+    font-size: 1.2em;
+    margin: 10px 0;
+    min-height: 24px;
+}
+
+#username-input {
+    margin-top: 20px;
+}
+
+#twitter-handle {
+    padding: 8px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#submit-username {
+    padding: 8px 15px;
+    background-color: #1DA1F2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
