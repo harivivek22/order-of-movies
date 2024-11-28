@@ -12,7 +12,6 @@ class MovieGame {
         this.movieList = document.getElementById('movie-list');
         this.dropZones = document.querySelectorAll('.drop-zone');
         this.feedbackMessage = document.getElementById('feedback-message');
-        this.scores = JSON.parse(localStorage.getItem('gameScores')) || [];
 
         // Game State
         this.movies = [];
@@ -188,24 +187,12 @@ class MovieGame {
                     .map(movie => movie.title)
                     .join(' → ')}`;
         } else if (isCorrect) {
+            // Correct order - end game with success
             clearInterval(this.interval);
             this.gameScreen.classList.add('hidden');
             this.resultScreen.classList.remove('hidden');
             document.getElementById('result-message').textContent = 'Congratulations!';
             document.getElementById('final-score').textContent = `Score: ${this.score}`;
-            document.getElementById('username-input').classList.remove('hidden');
-            
-            // Add event listener for username submission
-            document.getElementById('submit-username').addEventListener('click', () => {
-                const username = document.getElementById('twitter-handle').value;
-                if (username.length < 1) {
-                    alert('Please enter your username');
-                    return;
-                }
-                // Here you can handle the username and score submission
-                console.log(`Score submitted for @${username}: ${this.score}`);
-                document.getElementById('username-input').classList.add('hidden');
-            });
         } else {
             // Wrong order but still has time - reset positions and continue
             this.feedbackMessage.textContent = 'Wrong order! Try again!';
@@ -219,24 +206,6 @@ class MovieGame {
             this.submitBtn.classList.add('hidden');
         }
     }
-
-    submitScore(username) {
-        // new score
-        this.scores.push({ username, score: this.score });
-        
-        // scores in descending order
-        this.scores.sort((a, b) => b.score - a.score);
-        
-        // only top 10 scores
-        this.scores = this.scores.slice(0, 10);
-        
-        localStorage.setItem('gameScores', JSON.stringify(this.scores));
-        
-        // Display leaderboard
-        this.showLeaderboard();
-    }
-
-
 
     resetGame() {
         this.timer = 30;
