@@ -39,17 +39,21 @@ class MovieGame {
     
             // Get last used index from localStorage or start at 0
             let startIndex = parseInt(localStorage.getItem('movieIndex')) || 0;
+            console.log('Current start index:', startIndex);
             
             // If we've used all movies, start over
-            if (startIndex >= rows.length - 3) {
+            if (startIndex >= rows.length - 2) {
                 startIndex = 0;
+                localStorage.setItem('movieIndex', '0');
             }
     
             // Get next 3 movies
             const selectedRows = rows.slice(startIndex, startIndex + 3);
+            console.log('Selected movies:', selectedRows);
             
             // Update and save next starting index
             localStorage.setItem('movieIndex', (startIndex + 3).toString());
+            console.log('Next start index:', startIndex + 3);
     
             this.movies = selectedRows.map(row => {
                 const [year, month, date, title] = row.split(',').map(item => item.trim());
