@@ -31,28 +31,39 @@ class MovieGame {
         try {
             const response = await fetch('arrangemovies.csv');
             if (!response.ok) throw new Error('Failed to load CSV file');
-
+            
             const csvText = await response.text();
             const rows = csvText.split('\n')
                 .filter(row => row.trim())
-                .slice(1);
-
-            this.movies = rows.map(row => {
+                .slice(1);  // Skip header row
+    
+            // Get last used index from localStorage or start at 0
+            let startIndex = parseInt(localStorage.getItem('movieIndex')) || 0;
+            
+            // If we've used all movies, start over
+            if (startIndex >= rows.length - 3) {
+                startIndex = 0;
+            }
+    
+            // Get next 3 movies
+            const selectedRows = rows.slice(startIndex, startIndex + 3);
+            
+            // Update and save next starting index
+            localStorage.setItem('movieIndex', (startIndex + 3).toString());
+    
+            this.movies = selectedRows.map(row => {
                 const [year, month, date, title] = row.split(',').map(item => item.trim());
                 return {
                     title,
-                    releaseDate: new Date(`${year}-${month}-${date}`)  // Use ISO date format
+                    releaseDate: new Date(`${year}-${month}-${date}`)
                 };
             });
-
-            // Get 3 random movies
-            this.movies = this.shuffleArray([...this.movies]).slice(0, 3);
-
+    
             // Store the correct order
             this.correctOrder = [...this.movies].sort((a, b) => 
                 a.releaseDate.getTime() - b.releaseDate.getTime()
             );
-
+    
             return true;
         } catch (error) {
             console.error('Error loading movies:', error);
