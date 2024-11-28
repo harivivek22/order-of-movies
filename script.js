@@ -24,6 +24,7 @@ class MovieGame {
         this.submitBtn.addEventListener('click', () => this.checkAndSubmitOrder());
         this.playAgainBtn.addEventListener('click', () => this.resetGame());
         this.setupDragAndDrop();
+        
     }
 
     async fetchMovies() {
@@ -34,16 +35,22 @@ class MovieGame {
             const csvText = await response.text();
             const rows = csvText.split('\n')
                 .filter(row => row.trim())
-                .slice(1);
-            
+                .slice(1);  // Skip header row
+    
+            // Get last used index from localStorage or start at 0
             let startIndex = parseInt(localStorage.getItem('movieIndex')) || 0;
+            
+            // If we've used all movies, start over
             if (startIndex >= rows.length - 3) {
                 startIndex = 0;
             }
-
+    
+            // Get next 3 movies
             const selectedRows = rows.slice(startIndex, startIndex + 3);
+            
+            // Update and save next starting index
             localStorage.setItem('movieIndex', (startIndex + 3).toString());
-
+    
             this.movies = selectedRows.map(row => {
                 const [year, month, date, title] = row.split(',').map(item => item.trim());
                 return {
@@ -51,7 +58,12 @@ class MovieGame {
                     releaseDate: new Date(`${year}-${month}-${date}`)
                 };
             });
-
+    
+            // Store the correct order
+            this.correctOrder = [...this.movies].sort((a, b) => 
+                a.releaseDate.getTime() - b.releaseDate.getTime()
+            );
+    
             return true;
         } catch (error) {
             console.error('Error loading movies:', error);
@@ -71,10 +83,10 @@ class MovieGame {
     async startGame() {
         const moviesLoaded = await this.fetchMovies();
         if (!moviesLoaded) return;
-
+    
         this.startScreen.classList.add('hidden');
         this.gameScreen.classList.remove('hidden');
-        this.feedbackMessage.textContent = '';
+        this.feedbackMessage.textContent = ''; // Clear any previous feedback
         this.createMovieElements();
         this.startTimer();
     }
@@ -108,7 +120,7 @@ class MovieGame {
             zone.addEventListener('dragover', e => {
                 e.preventDefault();
             });
-            
+
             zone.addEventListener('drop', (e) => {
                 e.preventDefault();
                 const draggedMovie = document.querySelector('.movie.dragging');
@@ -148,18 +160,23 @@ class MovieGame {
         const playerOrder = Array.from(this.dropZones)
             .map(zone => zone.firstChild?.dataset.title)
             .filter(title => title);
-        
+
+        // Create a sorted reference array based on release dates
         const correctOrder = [...this.movies]
             .sort((a, b) => a.releaseDate - b.releaseDate)
             .map(movie => movie.title);
-            
+
+        console.log('Player order:', playerOrder);
+        console.log('Correct order:', correctOrder);
+
         return JSON.stringify(playerOrder) === JSON.stringify(correctOrder);
     }
 
     checkAndSubmitOrder() {
         const isCorrect = this.checkOrder();
-        
+    
         if (this.timer <= 0) {
+            // Time's up - end game
             clearInterval(this.interval);
             this.gameScreen.classList.add('hidden');
             this.resultScreen.classList.remove('hidden');
@@ -170,18 +187,20 @@ class MovieGame {
                     .map(movie => movie.title)
                     .join(' → ')}`;
         } else if (isCorrect) {
+            // Correct order - end game with success
             clearInterval(this.interval);
             this.gameScreen.classList.add('hidden');
             this.resultScreen.classList.remove('hidden');
             document.getElementById('result-message').textContent = 'Congratulations!';
             document.getElementById('final-score').textContent = `Score: ${this.score}`;
-            document.getElementById('username-input').classList.remove('hidden');
         } else {
+            // Wrong order but still has time - reset positions and continue
             this.feedbackMessage.textContent = 'Wrong order! Try again!';
             setTimeout(() => {
                 this.feedbackMessage.textContent = '';
             }, 2000);
             
+            // Reset movie positions
             this.dropZones.forEach(zone => zone.innerHTML = '');
             this.createMovieElements();
             this.submitBtn.classList.add('hidden');
@@ -196,11 +215,10 @@ class MovieGame {
         this.resultScreen.classList.add('hidden');
         this.startScreen.classList.remove('hidden');
         this.submitBtn.classList.add('hidden');
-        this.feedbackMessage.textContent = '';
+        this.feedbackMessage.textContent = ''; // Clear feedback message
         this.dropZones.forEach(zone => zone.innerHTML = '');
-        document.getElementById('username-input').classList.add('hidden');
-        document.getElementById('twitter-handle').value = '';
     }
 }
 
+// Initialize game when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => new MovieGame());
