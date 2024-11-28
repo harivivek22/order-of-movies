@@ -13,9 +13,6 @@ class MovieGame {
         this.dropZones = document.querySelectorAll('.drop-zone');
         this.feedbackMessage = document.getElementById('feedback-message');
         this.scores = JSON.parse(localStorage.getItem('gameScores')) || [];
-        this.leaderboard = document.getElementById('leaderboard');
-        this.scoresBody = document.getElementById('scores-body');
-        this.submitUsernameBtn = document.getElementById('submit-username');
 
         // Game State
         this.movies = [];
@@ -28,14 +25,6 @@ class MovieGame {
         this.submitBtn.addEventListener('click', () => this.checkAndSubmitOrder());
         this.playAgainBtn.addEventListener('click', () => this.resetGame());
         this.setupDragAndDrop();
-        this.submitUsernameBtn.addEventListener('click', () => {
-            const username = document.getElementById('twitter-handle').value.trim();
-            if (username.length < 1) {
-                alert('Please enter your username');
-                return;
-            }
-            this.submitScore(username);
-        });
         
     }
 
@@ -199,14 +188,24 @@ class MovieGame {
                     .map(movie => movie.title)
                     .join(' → ')}`;
         } else if (isCorrect) {
-        clearInterval(this.interval);
-        this.gameScreen.classList.add('hidden');
-        this.resultScreen.classList.remove('hidden');
-        document.getElementById('result-message').textContent = 'Congratulations!';
-        document.getElementById('final-score').textContent = `Score: ${this.score}`;
-        document.getElementById('username-input').classList.remove('hidden');
-        // Show existing leaderboard while waiting for new submission
-        this.showLeaderboard();
+            clearInterval(this.interval);
+            this.gameScreen.classList.add('hidden');
+            this.resultScreen.classList.remove('hidden');
+            document.getElementById('result-message').textContent = 'Congratulations!';
+            document.getElementById('final-score').textContent = `Score: ${this.score}`;
+            document.getElementById('username-input').classList.remove('hidden');
+            
+            // Add event listener for username submission
+            document.getElementById('submit-username').addEventListener('click', () => {
+                const username = document.getElementById('twitter-handle').value;
+                if (username.length < 1) {
+                    alert('Please enter your username');
+                    return;
+                }
+                // Here you can handle the username and score submission
+                console.log(`Score submitted for @${username}: ${this.score}`);
+                document.getElementById('username-input').classList.add('hidden');
+            });
         } else {
             // Wrong order but still has time - reset positions and continue
             this.feedbackMessage.textContent = 'Wrong order! Try again!';
@@ -222,53 +221,22 @@ class MovieGame {
     }
 
     submitScore(username) {
-    // Get existing scores or initialize empty array
-    let scores = JSON.parse(localStorage.getItem('gameScores')) || [];
-    
-    // Add new score
-    scores.push({
-        username: username,
-        score: this.score,
-        date: new Date().toISOString()
-    });
-    
-    // Sort scores by score value (highest first)
-    scores.sort((a, b) => b.score - a.score);
-    
-    // Keep only top 10 scores
-    scores = scores.slice(0, 10);
-    
-    // Save back to localStorage
-    localStorage.setItem('gameScores', JSON.stringify(scores));
-    
-    // Hide username input
-    document.getElementById('username-input').classList.add('hidden');
-    
-    // Update leaderboard display
-    this.showLeaderboard();
+        // new score
+        this.scores.push({ username, score: this.score });
+        
+        // scores in descending order
+        this.scores.sort((a, b) => b.score - a.score);
+        
+        // only top 10 scores
+        this.scores = this.scores.slice(0, 10);
+        
+        localStorage.setItem('gameScores', JSON.stringify(this.scores));
+        
+        // Display leaderboard
+        this.showLeaderboard();
     }
 
-    showLeaderboard() {
-    // Get scores from localStorage
-    const scores = JSON.parse(localStorage.getItem('gameScores')) || [];
-    
-    // Clear existing scores
-    this.scoresBody.innerHTML = '';
-    
-    // Add each score to the table
-    scores.forEach((score, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>@${score.username}</td>
-            <td>${score.score}</td>
-        `;
-        this.scoresBody.appendChild(row);
-    });
-    
-    // Show the leaderboard
-    this.leaderboard.classList.remove('hidden');
-    }
+
 
     resetGame() {
         this.timer = 30;
@@ -276,9 +244,6 @@ class MovieGame {
         this.timerElement.textContent = this.timer;
         this.scoreElement.textContent = this.score;
         this.resultScreen.classList.add('hidden');
-        this.leaderboard.classList.add('hidden');
-        document.getElementById('username-input').classList.add('hidden');
-        document.getElementById('twitter-handle').value = '';
         this.startScreen.classList.remove('hidden');
         this.submitBtn.classList.add('hidden');
         this.feedbackMessage.textContent = ''; // Clear feedback message
